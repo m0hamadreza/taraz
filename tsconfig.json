@@ -1,0 +1,27 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    // Ambient type packages are named explicitly; automatic @types discovery
+    // does not fire under Expo's "bundler" module resolution. NativeWind's own
+    // types come in through the triple-slash reference in global.d.ts.
+    "types": [
+      "jest",
+      "node",
+      "react"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "global.d.ts",
+    "nativewind-env.d.ts"
+  ]
+}
