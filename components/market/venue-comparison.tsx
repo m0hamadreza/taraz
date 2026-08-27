@@ -34,7 +34,7 @@ export function VenueComparison({
 }) {
   return (
     <View className="bg-card border-border mx-5 overflow-hidden rounded-2xl border">
-      <View className="border-border bg-secondary/60 flex-row gap-2 border-b px-4 py-2.5">
+      <View className="border-border bg-muted/60 flex-row gap-2 border-b px-4 py-2.5">
         <Text className="text-muted-foreground flex-[1.25] text-[11px] font-medium">منبع</Text>
         <Text className="text-muted-foreground flex-1 text-[11px] font-medium">خرید مؤثر</Text>
         <Text className="text-muted-foreground flex-1 text-[11px] font-medium">فروش مؤثر</Text>

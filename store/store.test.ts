@@ -60,6 +60,17 @@ describe('holdings store', () => {
     expect(await listHoldings()).toHaveLength(2);
   });
 
+  it('sets a quantity rather than adding to it, so a partial sale can be recorded', async () => {
+    // The bug this covers: adding the same asset+venue again *sums*, so there
+    // was no way to take 4g of gold down to the 2g still held after a sale.
+    const [holding] = await addHolding({ assetId: 'gold18', venueId: 'digikala', quantity: 4 });
+    const holdings = await updateHoldingQuantity(holding.id, 2);
+
+    expect(holdings).toHaveLength(1);
+    expect(holdings[0].quantity).toBe(2);
+    expect(holdings[0].id).toBe(holding.id);
+  });
+
   it('removes a position when its quantity is set to zero', async () => {
     const [holding] = await addHolding({ assetId: 'usdt', venueId: 'wallex', quantity: 100 });
     await updateHoldingQuantity(holding.id, 0);

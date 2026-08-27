@@ -22,9 +22,12 @@ export const FONTS = {
 } as const;
 
 /**
- * For the handful of nodes that cannot go through `className` — bare
- * `TextInput`s and react-navigation's `tabBarLabelStyle`, neither of which
- * NativeWind reaches.
+ * For the one node NativeWind cannot reach: `<Text>` from `react-native-svg`,
+ * which takes `fontFamily` as an SVG *attribute* rather than a style — the
+ * chart axis labels. A third-party component can otherwise be taught
+ * `className` with `cssInterop` (see `components/ui/icon.tsx` and
+ * `components/ui/input.tsx`), and that is the right fix; reaching for a family
+ * name in a screen is a sign that something is styling text outside `<Text/>`.
  */
 export const FONT_FAMILY = {
   regular: 'Estedad_400Regular',

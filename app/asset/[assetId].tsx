@@ -10,6 +10,7 @@ import { useCurrency, useHistory, useMarketData } from '@/api/queries';
 import { LineChart, type ChartSeries } from '@/components/charts/line-chart';
 import { Amount } from '@/components/common/amount';
 import { ChangeBadge } from '@/components/common/change-badge';
+import { Money } from '@/components/common/money';
 import { ErrorState } from '@/components/common/states';
 import { Screen } from '@/components/layout/screen';
 import { VenueComparison } from '@/components/market/venue-comparison';
@@ -17,10 +18,11 @@ import { useAddHoldingSheet } from '@/components/sheets/add-holding-sheet';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Text } from '@/components/ui/text';
 import { bestToBuy, bestToSell, buildVenueQuotes, sortBySell } from '@/domain/ranking';
 import { unitLabel } from '@/domain/units';
-import { formatJalaliShort, formatMoney, formatMoneyCompact, formatPercent } from '@/lib/format';
+import { formatJalaliShort, formatMoneyCompact, formatPercent } from '@/lib/format';
 import { pctChange } from '@/lib/money';
 import { CHART_SERIES_COLORS, THEME } from '@/lib/theme';
 
@@ -130,9 +132,13 @@ export default function AssetDetailScreen() {
             {best.buy ? (
               <Text className="text-muted-foreground border-border mt-3 border-t pt-3 text-xs">
                 ارزان‌ترین خرید:{' '}
-                <Text className="text-foreground text-xs font-semibold">
-                  {formatMoney(best.buy.effectiveBuyIrr, currency)}
-                </Text>{' '}
+                <Money
+                  rial={best.buy.effectiveBuyIrr}
+                  currency={currency}
+                  size="xs"
+                  inline
+                  className="text-foreground font-semibold"
+                />{' '}
                 در {best.buy.venue.nameFa}
               </Text>
             ) : null}
@@ -153,27 +159,16 @@ export default function AssetDetailScreen() {
 
         {/* Trend */}
         <View className="gap-3">
-          <View className="flex-row gap-2 px-5">
-            {RANGES.map((option) => (
-              <Pressable
-                key={option}
-                accessibilityRole="button"
-                onPress={() => setRange(option)}
-                className={
-                  option === range
-                    ? 'bg-primary rounded-full px-3 py-1.5'
-                    : 'bg-secondary rounded-full px-3 py-1.5'
-                }>
-                <Text
-                  className={
-                    option === range
-                      ? 'text-primary-foreground text-xs font-medium'
-                      : 'text-muted-foreground text-xs font-medium'
-                  }>
-                  {HISTORY_RANGE_LABEL[option]}
-                </Text>
-              </Pressable>
-            ))}
+          <View className="px-5">
+            <Tabs value={range} onValueChange={(value) => setRange(value as HistoryRange)}>
+              <TabsList className="w-full">
+                {RANGES.map((option) => (
+                  <TabsTrigger key={option} value={option} className="flex-1">
+                    <Text>{HISTORY_RANGE_LABEL[option]}</Text>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </View>
 
           <View className="px-5">
@@ -257,12 +252,12 @@ function DetailHeader({
         accessibilityLabel="بازگشت"
         onPress={onBack}
         hitSlop={8}
-        className="bg-secondary h-9 w-9 items-center justify-center rounded-full">
+        className="bg-muted h-9 w-9 items-center justify-center rounded-full">
         {/* In RTL, "back" points right. */}
         <Icon as={ChevronRight} size={18} />
       </Pressable>
       <View className="flex-1">
-        <Text className="text-xl font-bold">{title}</Text>
+        <Text className="text-lg font-bold">{title}</Text>
         {subtitle ? <Text className="text-muted-foreground text-xs">{subtitle}</Text> : null}
       </View>
     </View>

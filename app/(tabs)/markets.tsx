@@ -1,23 +1,21 @@
 import { useRouter } from 'expo-router';
-import { Search, X } from 'lucide-react-native';
-import { useColorScheme } from 'nativewind';
 import * as React from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RefreshControl, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import type { AssetKind } from '@/api/contracts';
 import { useCurrency, useMarketData } from '@/api/queries';
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/common/states';
 import { Screen, ScreenHeader } from '@/components/layout/screen';
+import { useTabBarSpace } from '@/components/navigation/app-tab-bar';
+import { useTabBarScrollProps } from '@/components/navigation/tab-bar-scroll';
 import { AssetRow } from '@/components/market/asset-row';
-import { Icon } from '@/components/ui/icon';
+import { SearchInput } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Text } from '@/components/ui/text';
 import { bestToBuy, bestToSell, buildVenueQuotes } from '@/domain/ranking';
 import { ASSET_KIND_LABEL } from '@/domain/valuation';
-import { FONT_FAMILY } from '@/lib/fonts';
 import { pctChange } from '@/lib/money';
-import { THEME } from '@/lib/theme';
-import { cn } from '@/lib/utils';
 
 const KIND_FILTERS: (AssetKind | 'all')[] = ['all', 'gold', 'coin', 'crypto', 'fiat'];
 
@@ -26,10 +24,9 @@ const KIND_FILTERS: (AssetKind | 'all')[] = ['all', 'gold', 'coin', 'crypto', 'f
  */
 export default function MarketsScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
+  const tabBarScroll = useTabBarScrollProps();
   const currency = useCurrency();
-  const { colorScheme } = useColorScheme();
-  const palette = THEME[colorScheme ?? 'light'];
 
   const { index, catalog, quotes, status } = useMarketData();
 
@@ -47,8 +44,7 @@ export default function MarketsScreen() {
         const needle = search.trim();
         if (!needle) return true;
         return (
-          asset.nameFa.includes(needle) ||
-          asset.symbol.toLowerCase().includes(needle.toLowerCase())
+          asset.nameFa.includes(needle) || asset.symbol.toLowerCase().includes(needle.toLowerCase())
         );
       })
       .map((asset) => {
@@ -71,57 +67,29 @@ export default function MarketsScreen() {
       });
   }, [catalog, quotes, index.venues, kind, search]);
 
-
   return (
     <Screen>
       <ScreenHeader title="بازار" subtitle="مقایسه قیمت خرید و فروش بین منابع" />
 
       <View className="px-5 pb-3">
-        <View className="bg-secondary flex-row items-center gap-2 rounded-xl px-3">
-          <Icon as={Search} size={16} className="text-muted-foreground" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="جستجوی طلا، تتر، بیت‌کوین…"
-            placeholderTextColor={palette.mutedForeground}
-            className="native:text-right flex-1 py-2.5 text-sm"
-            style={{ color: palette.foreground, fontFamily: FONT_FAMILY.regular }}
-          />
-          {search ? (
-            <Pressable accessibilityLabel="پاک کردن" hitSlop={8} onPress={() => setSearch('')}>
-              <Icon as={X} size={15} className="text-muted-foreground" />
-            </Pressable>
-          ) : null}
-        </View>
+        <SearchInput
+          value={search}
+          onChangeText={setSearch}
+          onClear={() => setSearch('')}
+          placeholder="جستجوی طلا، تتر، بیت‌کوین…"
+        />
       </View>
 
-      <View className="pb-3">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
-          {KIND_FILTERS.map((option) => {
-            const active = option === kind;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="button"
-                onPress={() => setKind(option)}
-                className={cn(
-                  'rounded-full px-3.5 py-1.5',
-                  active ? 'bg-primary' : 'bg-secondary'
-                )}>
-                <Text
-                  className={cn(
-                    'text-xs font-medium',
-                    active ? 'text-primary-foreground' : 'text-muted-foreground'
-                  )}>
-                  {option === 'all' ? 'همه' : ASSET_KIND_LABEL[option]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+      <View className="px-5 pb-3">
+        <Tabs value={kind} onValueChange={(value) => setKind(value as AssetKind | 'all')}>
+          <TabsList className="w-full">
+            {KIND_FILTERS.map((option) => (
+              <TabsTrigger key={option} value={option} className="flex-1">
+                <Text>{option === 'all' ? 'همه' : ASSET_KIND_LABEL[option]}</Text>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </View>
 
       {status.isError ? (
@@ -129,10 +97,11 @@ export default function MarketsScreen() {
       ) : status.isLoading ? (
         <ListSkeleton rows={5} />
       ) : (
-        <FlatList
+        <Animated.FlatList
+          {...tabBarScroll}
           data={rows}
           keyExtractor={(row) => row.asset.id}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24, gap: 10 }}
+          contentContainerStyle={{ paddingBottom: tabBarSpace + 24, gap: 10 }}
           refreshControl={
             <RefreshControl refreshing={status.isRefreshing} onRefresh={status.refetch} />
           }

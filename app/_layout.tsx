@@ -18,6 +18,8 @@ import { configureMockApi } from '@/api/mock/client';
 import { useSettings } from '@/api/queries';
 import { MobileFrame } from '@/components/layout/mobile-frame';
 import { AddHoldingSheetProvider } from '@/components/sheets/add-holding-sheet';
+import { EditHoldingSheetProvider } from '@/components/sheets/edit-holding-sheet';
+import { HoldingActionsSheetProvider } from '@/components/sheets/holding-actions-sheet';
 import { FONTS } from '@/lib/fonts';
 import { createQueryClient } from '@/lib/query-client';
 import { useColorSchemePreference } from '@/lib/use-color-scheme-preference';
@@ -76,15 +78,21 @@ function AppShell() {
     <ThemeProvider value={NAV_THEME[scheme]}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <AddHoldingSheetProvider>
-        <MobileFrame>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            {/* Leave the transition to the default: with native RTL forced,
-                react-navigation already mirrors the push animation, and naming a
-                direction here would flip it back. */}
-            <Stack.Screen name="asset/[assetId]" />
-          </Stack>
-        </MobileFrame>
+        {/* The actions sheet hands off to the edit sheet, so it has to sit
+            inside that provider to reach `useEditHoldingSheet()`. */}
+        <EditHoldingSheetProvider>
+          <HoldingActionsSheetProvider>
+            <MobileFrame>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                {/* Leave the transition to the default: with native RTL forced,
+                    react-navigation already mirrors the push animation, and
+                    naming a direction here would flip it back. */}
+                <Stack.Screen name="asset/[assetId]" />
+              </Stack>
+            </MobileFrame>
+          </HoldingActionsSheetProvider>
+        </EditHoldingSheetProvider>
       </AddHoldingSheetProvider>
       <PortalHost />
     </ThemeProvider>

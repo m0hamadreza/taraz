@@ -1,20 +1,20 @@
 import { API_MODE } from '@/api';
 import * as React from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import {
-  REFRESH_OPTIONS,
-  type Settings as SettingsShape,
-} from '@/store/settings';
+import { REFRESH_OPTIONS, type Settings as SettingsShape } from '@/store/settings';
 import { useClearHoldings, useHoldings, useSettings, useUpdateSettings } from '@/api/queries';
 import { Screen, ScreenHeader } from '@/components/layout/screen';
+import { useTabBarSpace } from '@/components/navigation/app-tab-bar';
+import { useTabBarScrollProps } from '@/components/navigation/tab-bar-scroll';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Text } from '@/components/ui/text';
 import { CURRENCY_LABEL, toPersianDigits } from '@/lib/format';
 import type { Currency } from '@/lib/money';
-import { cn } from '@/lib/utils';
 
 const SCHEME_LABEL: Record<SettingsShape['colorScheme'], string> = {
   system: 'سیستم',
@@ -23,37 +23,28 @@ const SCHEME_LABEL: Record<SettingsShape['colorScheme'], string> = {
 };
 
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
+  const tabBarScroll = useTabBarScrollProps();
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
   const { data: holdings } = useHoldings();
   const clearHoldings = useClearHoldings();
+  const [confirmingClear, setConfirmingClear] = React.useState(false);
 
   if (!settings) return <Screen />;
 
-  function confirmClear() {
-    const title = 'پاک کردن پرتفوی';
-    const message = 'همه دارایی‌های ثبت‌شده حذف می‌شوند. این کار برگشت‌پذیر نیست.';
-
-    if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
-      if (typeof window !== 'undefined' && window.confirm(`${title}\n${message}`)) {
-        clearHoldings.mutate(undefined);
-      }
-      return;
-    }
-
-    Alert.alert(title, message, [
-      { text: 'انصراف', style: 'cancel' },
-      { text: 'پاک کن', style: 'destructive', onPress: () => clearHoldings.mutate(undefined) },
-    ]);
+  function clear() {
+    clearHoldings.mutate(undefined);
+    setConfirmingClear(false);
   }
 
   return (
     <Screen>
       <ScreenHeader title="تنظیمات" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24, gap: 18 }}>
+      <Animated.ScrollView
+        {...tabBarScroll}
+        contentContainerStyle={{ paddingBottom: tabBarSpace + 24, gap: 18 }}>
         <Section title="نمایش">
           <SegmentedRow
             label="واحد پول"
@@ -99,7 +90,7 @@ export default function SettingsScreen() {
           <View className="flex-row items-center justify-between gap-3 px-4 py-3">
             <View className="flex-1">
               <Text className="text-sm">شبیه‌سازی قطعی شبکه</Text>
-              <Text className="text-muted-foreground mt-0.5 text-[11px]">
+              <Text className="mt-0.5 text-[11px] text-muted-foreground">
                 همه درخواست‌ها عمداً شکست می‌خورند تا حالت خطا و تلاش دوباره دیده شود.
               </Text>
             </View>
@@ -119,18 +110,29 @@ export default function SettingsScreen() {
 
         <Section title="داده‌ها">
           <View className="gap-3 px-4 py-3">
-            <Text className="text-muted-foreground text-xs">
+            <Text className="text-xs text-muted-foreground">
               {toPersianDigits(holdings?.length ?? 0)} دارایی روی همین دستگاه ذخیره شده است.
             </Text>
             <Button
               variant="destructive"
               disabled={!holdings?.length || clearHoldings.isPending}
-              onPress={confirmClear}>
+              onPress={() => setConfirmingClear(true)}>
               <Text>پاک کردن پرتفوی</Text>
             </Button>
           </View>
         </Section>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      <ConfirmDialog
+        open={confirmingClear}
+        onOpenChange={setConfirmingClear}
+        destructive
+        title="پاک کردن پرتفوی"
+        description="همه دارایی‌های ثبت‌شده حذف می‌شوند. این کار برگشت‌پذیر نیست."
+        confirmLabel="پاک کن"
+        pending={clearHoldings.isPending}
+        onConfirm={clear}
+      />
     </Screen>
   );
 }
@@ -142,19 +144,19 @@ function Section({
 }: React.PropsWithChildren<{ title: string; description?: string }>) {
   return (
     <View className="gap-2">
-      <Text className="text-muted-foreground px-5 text-xs font-medium">{title}</Text>
-      <View className="bg-card border-border mx-5 overflow-hidden rounded-2xl border">
+      <Text className="px-5 text-xs text-muted-foreground font-medium">{title}</Text>
+      <View className="mx-5 overflow-hidden rounded-2xl border border-border bg-card">
         {children}
       </View>
       {description ? (
-        <Text className="text-muted-foreground px-5 text-[11px] leading-5">{description}</Text>
+        <Text className="px-5 text-[11px] leading-5 text-muted-foreground">{description}</Text>
       ) : null}
     </View>
   );
 }
 
 function Divider() {
-  return <View className="bg-border h-px" />;
+  return <View className="h-px bg-border" />;
 }
 
 function SegmentedRow<T extends string | number>({
@@ -171,33 +173,27 @@ function SegmentedRow<T extends string | number>({
   return (
     <View className="gap-2.5 px-4 py-3">
       <Text className="text-sm">{label}</Text>
-      <View className="bg-secondary flex-row gap-1 rounded-xl p-1">
-        {options.map((option) => {
-          const active = option.value === value;
-          return (
-            <Pressable
+      {/* `@rn-primitives/tabs` keys every value as a string and one option set
+          here is numeric (the refresh interval in ms), so the value goes out
+          through `String()` and comes back by looking the option up again —
+          `onChange` still hands the call site its own `T`. */}
+      <Tabs
+        value={String(value)}
+        onValueChange={(next) => {
+          const option = options.find((candidate) => String(candidate.value) === next);
+          if (option) onChange(option.value);
+        }}>
+        <TabsList className="w-full">
+          {options.map((option) => (
+            <TabsTrigger
               key={String(option.value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              onPress={() => onChange(option.value)}
-              // Selected uses the accent fill rather than `bg-background`: in
-              // dark mode the background is darker than the track, so the
-              // active pill read as a hole punched in the control.
-              className={cn(
-                'flex-1 items-center rounded-lg py-2',
-                active && 'bg-primary'
-              )}>
-              <Text
-                className={cn(
-                  'text-xs font-medium',
-                  active ? 'text-primary-foreground font-semibold' : 'text-muted-foreground'
-                )}>
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+              value={String(option.value)}
+              className="flex-1">
+              <Text>{option.label}</Text>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
     </View>
   );
 }

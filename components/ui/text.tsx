@@ -76,6 +76,27 @@ const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
   h4: '4',
 };
 
+/*
+ * react-native-web renders a root <Text> as a <div dir="auto">, and `auto`
+ * resolves the paragraph direction from the first *strong* character. Persian
+ * digits are U+06F0–U+06F9, bidi class EN — weak, and skipped by that scan — so
+ * a subtitle like "۰٫۲۱ BTC" or "۱۰۰ USDT" resolves from the Latin symbol,
+ * comes out ltr, and `text-align: start` parks it on the left while every
+ * Persian sibling row sits on the right.
+ *
+ * The app is RTL-only, so state the direction outright — the same fix
+ * `global.css` applies to <input>, except that here it has to be the attribute
+ * rather than a CSS `direction`: `dir="auto"` is implemented as
+ * `unicode-bidi: plaintext`, which keeps resolving `start` from the content per
+ * line no matter what the `direction` property says. `dir="rtl"` carries
+ * `unicode-bidi: isolate` with it, so a Latin run inside a Persian line still
+ * reads left-to-right within a right-aligned line.
+ *
+ * Cast because `dir` is a react-native-web prop and is not in RN's TextProps;
+ * spread before `...props` so a call site can still opt out.
+ */
+const WEB_DIR = Platform.select({ web: { dir: 'rtl' } }) as { dir?: 'rtl' } | undefined;
+
 const TextClassContext = React.createContext<string | undefined>(undefined);
 
 function Text({
@@ -92,6 +113,7 @@ function Text({
   const Component = asChild ? Slot : RNText;
   return (
     <Component
+      {...WEB_DIR}
       className={cn(textVariants({ variant }), textClass, className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}

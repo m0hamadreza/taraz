@@ -10,7 +10,7 @@ export default function NotFoundScreen() {
       <View className="bg-background flex-1 items-center justify-center gap-3 p-5">
         <Text className="text-lg font-semibold">این صفحه وجود ندارد.</Text>
         <Link href="/">
-          <Text className="text-primary text-sm">بازگشت به پرتفوی</Text>
+          <Text className="text-accent-foreground text-sm">بازگشت به پرتفوی</Text>
         </Link>
       </View>
     </>

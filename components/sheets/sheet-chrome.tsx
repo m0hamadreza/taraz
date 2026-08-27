@@ -1,17 +1,5 @@
-import {
-  BottomSheetBackdrop,
-  BottomSheetTextInput,
-  type BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
-import * as React from 'react';
-import {
-  Platform,
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-  type ViewStyle,
-} from 'react-native';
+import { BottomSheetBackdrop, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { MOBILE_FRAME_WIDTH } from '@/components/layout/mobile-frame';
 import { Text } from '@/components/ui/text';
@@ -42,19 +30,6 @@ export const SHEET_CONTAINER_STYLE: ViewStyle | undefined =
         },
       }).container
     : undefined;
-
-/**
- * The sheet's own text input on native, a plain one on web.
- *
- * `BottomSheetTextInput` exists to keep the sheet's keyboard state in sync,
- * which on web is both pointless — RN's `Keyboard` events never fire in a
- * browser — and fatal: its blur handler reads
- * `TextInput.State.currentlyFocusedInput()`, which react-native-web does not
- * implement (it kept the older `currentlyFocusedField`), so leaving a field
- * throws `currentlyFocusedInput is not a function`.
- */
-export const SheetTextInput: React.ComponentType<TextInputProps> =
-  Platform.OS === 'web' ? TextInput : BottomSheetTextInput;
 
 /** Tap-to-dismiss scrim, faded in with the sheet. */
 export function SheetBackdrop(props: BottomSheetBackdropProps) {

@@ -24,6 +24,19 @@ export function Screen({
   );
 }
 
+/**
+ * A header with no subtitle must still stand as tall as one with it. The tabs
+ * are switched between screens that carry a subtitle (پرتفوی، بازار) and one
+ * that does not (تنظیمات), and a header that collapses by a line drags the
+ * whole screen up with it. The floor is the pair's own two line boxes:
+ * `text-xl` is 28pt, `mt-0.5` is 2, `text-sm` is 20 — Tailwind's default
+ * line-heights, which nothing here overrides. The block stays top-aligned, so
+ * the title lands on the same baseline whether or not a subtitle follows it
+ * and the reserved line is spent below; centring a lone title would move the
+ * one element every screen has in common.
+ */
+const TITLE_BLOCK_MIN_HEIGHT = 50;
+
 export function ScreenHeader({
   title,
   subtitle,
@@ -35,8 +48,8 @@ export function ScreenHeader({
 }) {
   return (
     <View className="flex-row items-center justify-between gap-3 px-5 pb-3 pt-2">
-      <View className="flex-1">
-        <Text className="text-2xl font-bold">{title}</Text>
+      <View className="flex-1" style={{ minHeight: TITLE_BLOCK_MIN_HEIGHT }}>
+        <Text className="text-xl font-bold">{title}</Text>
         {subtitle ? <Text className="text-muted-foreground mt-0.5 text-sm">{subtitle}</Text> : null}
       </View>
       {action}

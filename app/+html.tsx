@@ -40,10 +40,10 @@ export default function Root({ children }: PropsWithChildren) {
  */
 const BACKDROP_CSS = `
 body {
-  background-color: hsl(40 14% 91%);
+  background-color: hsl(75 11% 92.9%);
   overscroll-behavior-y: none;
 }
 @media (prefers-color-scheme: dark) {
-  body { background-color: hsl(30 9% 4%); }
+  body { background-color: hsl(231.4 88.6% 2.1%); }
 }
 `;

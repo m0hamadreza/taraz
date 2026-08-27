@@ -1,74 +1,112 @@
 import { DarkTheme, DefaultTheme, type Theme } from 'expo-router/react-navigation';
 
+import type { AssetKind } from '@/api/contracts';
+
 /**
  * JS mirror of the CSS custom properties in `global.css`.
  *
  * Anything that cannot read a className needs these: react-navigation's theme,
  * react-native-svg fills and strokes in the chart components, and the status
  * bar. Keep the two files in sync — they are the same palette expressed twice.
+ *
+ * The palette is authored in OKLCH (a tweakcn/shadcn theme) and converted to
+ * `H S% L%` triplets here and in `global.css`: React Native's colour parser
+ * has no `oklch()`, and NativeWind hands these strings straight to it. The
+ * conversion is gamut-mapped by chroma reduction, so hue and lightness hold.
  */
 export const THEME = {
   light: {
-    background: 'hsl(40 33% 98%)',
-    foreground: 'hsl(30 12% 12%)',
+    background: 'hsl(75 40.2% 98%)',
+    foreground: 'hsl(222.2 47.3% 11.2%)',
     card: 'hsl(0 0% 100%)',
-    cardForeground: 'hsl(30 12% 12%)',
+    cardForeground: 'hsl(222.2 47.3% 11.2%)',
     popover: 'hsl(0 0% 100%)',
-    popoverForeground: 'hsl(30 12% 12%)',
-    primary: 'hsl(41 72% 42%)',
-    primaryForeground: 'hsl(40 40% 98%)',
-    secondary: 'hsl(40 20% 94%)',
-    secondaryForeground: 'hsl(30 12% 18%)',
-    muted: 'hsl(40 20% 94%)',
-    mutedForeground: 'hsl(30 8% 44%)',
-    accent: 'hsl(41 60% 92%)',
-    accentForeground: 'hsl(30 12% 18%)',
-    destructive: 'hsl(0 72% 48%)',
-    border: 'hsl(38 16% 88%)',
-    input: 'hsl(38 16% 88%)',
-    ring: 'hsl(41 72% 42%)',
-    radius: '0.875rem',
-    up: 'hsl(152 58% 34%)',
-    down: 'hsl(0 72% 48%)',
-    chart1: 'hsl(41 72% 48%)',
-    chart2: 'hsl(199 62% 42%)',
-    chart3: 'hsl(265 45% 55%)',
-    chart4: 'hsl(152 48% 40%)',
-    chart5: 'hsl(12 68% 55%)',
+    popoverForeground: 'hsl(222.2 47.3% 11.2%)',
+    primary: 'hsl(82.5 88.3% 59.8%)',
+    primaryForeground: 'hsl(0 0% 0%)',
+    secondary: 'hsl(215.3 25% 26.7%)',
+    secondaryForeground: 'hsl(210 40% 98%)',
+    muted: 'hsl(210 40.3% 96.1%)',
+    mutedForeground: 'hsl(215.4 16.3% 46.9%)',
+    accent: 'hsl(138.5 76.5% 96.7%)',
+    accentForeground: 'hsl(142.8 64.2% 24.1%)',
+    destructive: 'hsl(0 84.2% 60.2%)',
+    border: 'hsl(214.3 31.8% 91.4%)',
+    input: 'hsl(214.3 31.8% 91.4%)',
+    ring: 'hsl(82.5 88.3% 59.8%)',
+    radius: '1rem',
+    up: 'hsl(142.8 64.2% 24.1%)',
+    down: 'hsl(0 84.2% 60.2%)',
+    chart1: 'hsl(82.5 88.3% 59.8%)',
+    chart2: 'hsl(215.3 25% 26.7%)',
+    chart3: 'hsl(142.1 70.6% 45.3%)',
+    chart4: 'hsl(215.4 16.3% 46.9%)',
+    chart5: 'hsl(215 20.2% 65.1%)',
   },
   dark: {
-    background: 'hsl(30 10% 7%)',
-    foreground: 'hsl(40 20% 95%)',
-    card: 'hsl(30 9% 11%)',
-    cardForeground: 'hsl(40 20% 95%)',
-    popover: 'hsl(30 9% 11%)',
-    popoverForeground: 'hsl(40 20% 95%)',
-    primary: 'hsl(41 78% 56%)',
-    primaryForeground: 'hsl(30 20% 10%)',
-    secondary: 'hsl(30 8% 17%)',
-    secondaryForeground: 'hsl(40 20% 95%)',
-    muted: 'hsl(30 8% 17%)',
-    mutedForeground: 'hsl(38 10% 62%)',
-    accent: 'hsl(30 10% 20%)',
-    accentForeground: 'hsl(40 20% 95%)',
-    destructive: 'hsl(0 68% 58%)',
-    border: 'hsl(30 8% 20%)',
-    input: 'hsl(30 8% 22%)',
-    ring: 'hsl(41 78% 56%)',
-    radius: '0.875rem',
-    up: 'hsl(152 52% 48%)',
-    down: 'hsl(0 68% 60%)',
-    chart1: 'hsl(41 78% 58%)',
-    chart2: 'hsl(199 66% 56%)',
-    chart3: 'hsl(265 55% 68%)',
-    chart4: 'hsl(152 46% 52%)',
-    chart5: 'hsl(12 72% 64%)',
+    background: 'hsl(228.6 84% 4.9%)',
+    foreground: 'hsl(210 40% 98%)',
+    card: 'hsl(222.2 47.3% 11.2%)',
+    cardForeground: 'hsl(210 40% 98%)',
+    popover: 'hsl(222.2 47.3% 11.2%)',
+    popoverForeground: 'hsl(210 40% 98%)',
+    primary: 'hsl(82.5 88.3% 59.8%)',
+    primaryForeground: 'hsl(0 0% 0%)',
+    secondary: 'hsl(217.2 32.5% 17.4%)',
+    secondaryForeground: 'hsl(210 40% 98%)',
+    muted: 'hsl(217.2 32.5% 17.4%)',
+    mutedForeground: 'hsl(215 20.2% 65.1%)',
+    accent: 'hsl(143.8 61.1% 20.2%)',
+    accentForeground: 'hsl(82.5 88.3% 59.8%)',
+    destructive: 'hsl(0 70% 35.3%)',
+    border: 'hsl(217.2 32.5% 17.4%)',
+    input: 'hsl(217.2 32.5% 17.4%)',
+    ring: 'hsl(82.5 88.3% 59.8%)',
+    radius: '1rem',
+    up: 'hsl(142.1 70.6% 45.3%)',
+    down: 'hsl(0 84.2% 60.2%)',
+    chart1: 'hsl(82.5 88.3% 59.8%)',
+    chart2: 'hsl(217.2 91.2% 59.8%)',
+    chart3: 'hsl(142.1 70.6% 45.3%)',
+    chart4: 'hsl(270.7 91% 65.1%)',
+    chart5: 'hsl(37.7 92.1% 50.2%)',
   },
 } as const;
 
 export type ThemeColors = (typeof THEME)['light'];
 
 export const CHART_SERIES_COLORS = ['chart1', 'chart2', 'chart3', 'chart4', 'chart5'] as const;
+
+export type ChartColorKey = (typeof CHART_SERIES_COLORS)[number];
+
+/**
+ * Which chart slot each asset kind gets.
+ *
+ * The donut legend in `portfolio-header.tsx` and the avatar on `holding-row.tsx`
+ * are the same colour coding seen twice, so a row can be traced back to its
+ * slice. Stated here exactly once so the two cannot drift.
+ */
+export const ASSET_KIND_COLOR_KEY = {
+  gold: 'chart1',
+  coin: 'chart5',
+  crypto: 'chart2',
+  fiat: 'chart4',
+} as const satisfies Record<AssetKind, ChartColorKey>;
+
+/**
+ * The same five slots as classNames, for the nodes that *can* read one.
+ *
+ * Spelled out rather than built up: Tailwind only ever sees literal strings, so
+ * a `bg-chart${n}` would never be generated. Keyed by slot rather than by kind
+ * so `ASSET_KIND_COLOR_KEY` above stays the single place the mapping lives.
+ */
+export const CHART_CLASS: Record<ChartColorKey, { bg: string; tint: string; text: string }> = {
+  chart1: { bg: 'bg-chart1', tint: 'bg-chart1/10', text: 'text-chart1' },
+  chart2: { bg: 'bg-chart2', tint: 'bg-chart2/10', text: 'text-chart2' },
+  chart3: { bg: 'bg-chart3', tint: 'bg-chart3/10', text: 'text-chart3' },
+  chart4: { bg: 'bg-chart4', tint: 'bg-chart4/10', text: 'text-chart4' },
+  chart5: { bg: 'bg-chart5', tint: 'bg-chart5/10', text: 'text-chart5' },
+};
 
 export const NAV_THEME: Record<'light' | 'dark', Theme> = {
   light: {

@@ -5,9 +5,26 @@ const plugin = require('tailwindcss/plugin');
  * React Native cannot synthesise weights from one family the way a browser can,
  * and it cannot pick a weight off a variable font's `wght` axis either — so
  * Estedad is registered as one static face per weight and every weight utility
- * names its own family. Setting both `font-family` and `font-weight` keeps web
- * correct and gives Android an explicitly-registered typeface to measure with,
- * which also avoids nativewind#1846 (bold text clipping after a space).
+ * names its own family. Naming a family per weight is also what sidesteps
+ * nativewind#1846 (bold text clipping after a space on Android).
+ *
+ * These utilities set **only** `font-family`, never `font-weight`. The family
+ * name already carries the weight on all three platforms, and pairing it with a
+ * `font-weight` is actively wrong on two of them:
+ *
+ * - **Android.** `expo-font` loads a face at runtime through
+ *   `ReactFontManager.setTypeface(family, Typeface.NORMAL, …)` — the NORMAL
+ *   slot only. A request for weight ≥ 700 resolves to `Typeface.BOLD`, misses
+ *   that slot, looks for an `assets/fonts/<family>_bold.ttf` that a
+ *   runtime-loaded font does not have, and ends at
+ *   `Typeface.create('Estedad_700Bold', BOLD)` — a family name Android has
+ *   never heard of, which it answers with **Roboto**. So `font-bold` and
+ *   `font-extrabold` silently lost Estedad on Android (screen headers, the
+ *   portfolio figure) while `font-medium`/`font-semibold` kept it, because
+ *   weights below 700 land in the NORMAL slot and get the cached face back.
+ * - **Web.** The `@font-face` these register carries the default `400`
+ *   descriptor, so asking for 600–800 on top of an already-bold file makes the
+ *   browser fake bold over real bold.
  *
  * Only the weights actually registered in `lib/fonts.ts` appear here. A utility
  * naming a face that was never loaded is worse than none at all: it silently
@@ -16,11 +33,11 @@ const plugin = require('tailwindcss/plugin');
  * someone ships those TTFs.
  */
 const estedadWeights = {
-  '.font-normal': ['Estedad_400Regular', '400'],
-  '.font-medium': ['Estedad_500Medium', '500'],
-  '.font-semibold': ['Estedad_600SemiBold', '600'],
-  '.font-bold': ['Estedad_700Bold', '700'],
-  '.font-extrabold': ['Estedad_800ExtraBold', '800'],
+  '.font-normal': 'Estedad_400Regular',
+  '.font-medium': 'Estedad_500Medium',
+  '.font-semibold': 'Estedad_600SemiBold',
+  '.font-bold': 'Estedad_700Bold',
+  '.font-extrabold': 'Estedad_800ExtraBold',
 };
 
 /** @type {import('tailwindcss').Config} */
@@ -33,6 +50,20 @@ module.exports = {
   ],
   presets: [require('nativewind/preset')],
   theme: {
+    /**
+     * Tailwind's own weight utilities are dropped for the five weights Estedad
+     * ships. A plugin utility cannot *unset* a `font-weight` the core utility
+     * already emitted — both rules carry the same selector, so the cascade on
+     * web and NativeWind's style flattening on native both end up with the pair
+     * again, which is the Android-Roboto trap described above. The weights left
+     * here have no Estedad face and keep plain `font-weight` behaviour.
+     */
+    fontWeight: {
+      thin: '100',
+      extralight: '200',
+      light: '300',
+      black: '900',
+    },
     extend: {
       fontFamily: {
         sans: ['Estedad_400Regular'],
@@ -116,9 +147,9 @@ module.exports = {
     plugin(({ addUtilities }) => {
       addUtilities(
         Object.fromEntries(
-          Object.entries(estedadWeights).map(([selector, [family, weight]]) => [
+          Object.entries(estedadWeights).map(([selector, family]) => [
             selector,
-            { 'font-family': family, 'font-weight': weight },
+            { 'font-family': family },
           ])
         )
       );

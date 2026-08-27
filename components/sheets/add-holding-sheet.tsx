@@ -1,6 +1,6 @@
-import { BottomSheetFlatList, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetFlatList, BottomSheetModal } from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
-import { ChevronRight, Search } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { Platform, Pressable, View } from 'react-native';
@@ -8,21 +8,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Asset, Quote, Venue } from '@/api/contracts';
 import { useAddHolding, useCatalogIndex, useCurrency, useQuoteIndex } from '@/api/queries';
+import { AssetKindAvatar } from '@/components/common/asset-kind-avatar';
+import { QuantityStep } from '@/components/sheets/quantity-step';
 import {
   SHEET_CONTAINER_STYLE,
   SheetBackdrop,
   SheetHeader,
-  SheetTextInput,
   sheetTheme,
 } from '@/components/sheets/sheet-chrome';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { SearchInput } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { unitLabel, VENUE_KIND_LABEL } from '@/domain/units';
 import { ASSET_KIND_LABEL, quoteKey } from '@/domain/valuation';
-import { formatMoney, formatQuantity, toLatinDigits } from '@/lib/format';
-import { FONT_FAMILY } from '@/lib/fonts';
-import { THEME } from '@/lib/theme';
+import { formatMoney, formatQuantity, parseQuantity } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /**
@@ -96,7 +95,7 @@ export function AddHoldingSheetProvider({ children }: React.PropsWithChildren) {
   );
 }
 
-const SNAP_POINTS = ['82%'];
+const SNAP_POINTS = ['80%'];
 
 function AddHoldingSheet({
   sheetRef,
@@ -150,12 +149,9 @@ function AddHoldingSheet({
       .filter((v): v is Venue => Boolean(v));
   }, [assetId, index]);
 
-  const numericQuantity = React.useMemo(() => {
-    const parsed = Number.parseFloat(toLatinDigits(quantity).replace(/,/g, ''));
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-  }, [quantity]);
-
-  const previewIrr = quote ? numericQuantity * quote.bidIrr : 0;
+  // A new holding needs a positive amount; zero is only meaningful when
+  // editing one, where it clears the position.
+  const numericQuantity = parseQuantity(quantity) ?? 0;
 
   function pickAsset(next: Asset) {
     setAssetId(next.id);
@@ -178,7 +174,6 @@ function AddHoldingSheet({
   }
 
   const theme = sheetTheme(scheme);
-  const palette = THEME[scheme];
 
   const header = (
     <SheetHeader
@@ -196,7 +191,7 @@ function AddHoldingSheet({
             accessibilityRole="button"
             accessibilityLabel="بازگشت"
             onPress={() => setStep(step === 'quantity' ? 'venue' : 'asset')}
-            className="bg-secondary h-9 w-9 items-center justify-center rounded-full">
+            className="bg-muted h-9 w-9 items-center justify-center rounded-full">
             {/* ChevronRight points "back" in an RTL layout. */}
             <Icon as={ChevronRight} size={18} />
           </Pressable>
@@ -242,23 +237,13 @@ function AddHoldingSheet({
         <>
           {header}
           <View className="px-5 py-3">
-            <View className="bg-secondary flex-row items-center gap-2 rounded-xl px-3">
-              <Icon as={Search} size={16} className="text-muted-foreground" />
-              <SheetTextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="جستجوی دارایی…"
-                placeholderTextColor={palette.mutedForeground}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  color: palette.foreground,
-                  fontFamily: FONT_FAMILY.regular,
-                  fontSize: 14,
-                  textAlign: 'right',
-                }}
-              />
-            </View>
+            <SearchInput
+              inSheet
+              value={search}
+              onChangeText={setSearch}
+              onClear={() => setSearch('')}
+              placeholder="جستجوی دارایی…"
+            />
           </View>
           <BottomSheetFlatList
             data={assets}
@@ -268,6 +253,7 @@ function AddHoldingSheet({
               <OptionRow
                 title={item.nameFa}
                 subtitle={`${ASSET_KIND_LABEL[item.kind]} · ${item.symbol}`}
+                leading={<AssetKindAvatar kind={item.kind} assetId={item.id} />}
                 onPress={() => pickAsset(item)}
               />
             )}
@@ -304,71 +290,25 @@ function AddHoldingSheet({
       {step === 'quantity' ? (
         <>
           {header}
-          {/*
-           * A scrollable rather than a `BottomSheetView`: the sheet is a fixed
-           * 82% tall, so a plain view would leave the submit button floating in
-           * the middle of the card with the bottom inset padding stranded
-           * below it. `flexGrow` lets the column fill the sheet so `mt-auto`
-           * can push the button onto the bottom edge, and it still scrolls
-           * when the keyboard shortens the sheet on native.
-           */}
-          <BottomSheetScrollView
-            contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 16 }}
-            keyboardShouldPersistTaps="handled">
-            <View className="flex-1 gap-5 px-5 pt-5">
-              <View>
-                <Text className="text-muted-foreground mb-2 text-xs">
-                  مقدار به {unitLabel(asset)}
-                </Text>
-                <View className="border-input bg-background flex-row items-center gap-2 rounded-xl border px-4">
-                  <SheetTextInput
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    keyboardType="decimal-pad"
-                    inputMode="decimal"
-                    autoFocus
-                    placeholder="۰"
-                    placeholderTextColor={palette.mutedForeground}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 14,
-                      color: palette.foreground,
-                      fontFamily: FONT_FAMILY.semibold,
-                      fontSize: 22,
-                      textAlign: 'right',
-                    }}
-                  />
-                  <Text className="text-muted-foreground text-sm">{unitLabel(asset)}</Text>
-                </View>
-              </View>
-
-              {quote ? (
-                <View className="bg-secondary gap-1 rounded-xl p-4">
-                  <Text className="text-muted-foreground text-xs">
-                    ارزش تقریبی به قیمت فروش {venue?.nameFa}
-                  </Text>
-                  <Text className="text-xl font-bold">{formatMoney(previewIrr, currency)}</Text>
-                  <Text className="text-muted-foreground text-[11px]">
-                    هر {unitLabel(asset)} {formatMoney(quote.bidIrr, currency)}
-                  </Text>
-                </View>
-              ) : null}
-
-              <Button
-                className="mt-auto"
-                size="lg"
-                disabled={numericQuantity <= 0 || addHolding.isPending}
-                onPress={submit}>
-                <Text>
-                  {numericQuantity > 0 && asset
-                    ? `افزودن ${formatQuantity(numericQuantity, asset.decimals)} ${unitLabel(asset)}`
-                    : 'افزودن به پرتفوی'}
-                </Text>
-              </Button>
-            </View>
-          </BottomSheetScrollView>
+          <QuantityStep
+            asset={asset}
+            venue={venue}
+            quote={quote}
+            currency={currency}
+            value={quantity}
+            onChangeValue={setQuantity}
+            quantity={numericQuantity}
+            submitDisabled={numericQuantity <= 0 || addHolding.isPending}
+            submitLabel={
+              numericQuantity > 0 && asset
+                ? `افزودن ${formatQuantity(numericQuantity, asset.decimals)} ${unitLabel(asset)}`
+                : 'افزودن به پرتفوی'
+            }
+            onSubmit={submit}
+          />
         </>
       ) : null}
+
     </BottomSheetModal>
   );
 }
@@ -376,10 +316,13 @@ function AddHoldingSheet({
 function OptionRow({
   title,
   subtitle,
+  leading,
   onPress,
 }: {
   title: string;
   subtitle: string;
+  /** The asset's avatar on the asset step; venues have no artwork. */
+  leading?: React.ReactNode;
   onPress: () => void;
 }) {
   return (
@@ -388,8 +331,9 @@ function OptionRow({
       onPress={onPress}
       className={cn(
         'flex-row items-center justify-between gap-3 px-5 py-3.5',
-        'active:bg-secondary'
+        'active:bg-muted'
       )}>
+      {leading}
       <View className="flex-1">
         <Text className="font-medium">{title}</Text>
         <Text className="text-muted-foreground mt-0.5 text-xs">{subtitle}</Text>

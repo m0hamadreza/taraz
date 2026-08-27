@@ -69,34 +69,78 @@ export const CURRENCY_LABEL: Record<Currency, string> = {
 };
 
 /**
+ * Magnitude words, largest first. `همت` (هزار میلیارد تومان) is the standard
+ * Iranian unit for the trillions.
+ */
+const MAGNITUDES = [
+  { min: 1e12, divisor: 1e12, label: 'هزار میلیارد' },
+  { min: 1e9, divisor: 1e9, label: 'میلیارد' },
+  { min: 1e6, divisor: 1e6, label: 'میلیون' },
+] as const;
+
+export type MoneyParts = {
+  /** The figure, digits only — already grouped and shaped. */
+  value: string;
+  /** Everything after it: the currency word, and a magnitude word when compact. */
+  unit: string;
+};
+
+/**
+ * The figure and its unit, kept apart.
+ *
+ * Every money figure in the UI sets the unit a step smaller and in the muted
+ * colour — the number is the content, the unit is a label that repeats on every
+ * row. That needs two `<Text>` nodes, so the split has to happen before
+ * formatting rather than by picking the last word off a formatted string.
+ * `<Money/>` and `<Amount/>` are the consumers; `formatMoney` below rejoins
+ * them for the few places that genuinely need one string.
+ */
+export function formatMoneyParts(
+  rial: number,
+  currency: Currency,
+  { compact = false }: { compact?: boolean } = {}
+): MoneyParts {
+  const amount = toDisplayAmount(rial, currency);
+  const unit = CURRENCY_LABEL[currency];
+
+  if (compact) {
+    const abs = Math.abs(amount);
+    const magnitude = MAGNITUDES.find((m) => abs >= m.min);
+    if (magnitude) {
+      const sign = rial < 0 ? '-' : '';
+      const figure = formatNumber(abs / magnitude.divisor, { maximumFractionDigits: 2 });
+      return { value: `${sign}${figure}`, unit: `${magnitude.label} ${unit}` };
+    }
+  }
+
+  return { value: formatNumber(roundRial(amount)), unit };
+}
+
+/**
  * Format an internal Rial amount for display in the user's chosen currency.
  * Pass `withUnit: false` when the unit is already shown alongside (e.g. a column
  * header) so it is not repeated on every row.
+ *
+ * Prefer `<Money/>` in the UI: this returns one flat string, so the unit cannot
+ * be de-emphasised. It is for strings that are consumed as strings —
+ * accessibility labels, a sheet row's subtitle, a chart tick.
  */
 export function formatMoney(
   rial: number,
   currency: Currency,
   { withUnit = true }: { withUnit?: boolean } = {}
 ): string {
-  const amount = roundRial(toDisplayAmount(rial, currency));
-  const text = formatNumber(amount);
-  return withUnit ? `${text} ${CURRENCY_LABEL[currency]}` : text;
+  const { value, unit } = formatMoneyParts(rial, currency);
+  return withUnit ? `${value} ${unit}` : value;
 }
 
 /**
- * Shorten large sums to میلیون / میلیارد / همت for headline positions where the
- * full number would wrap. `همت` (هزار میلیارد تومان) is the standard Iranian
- * unit for the trillions.
+ * Shorten large sums to میلیون / میلیارد / هزار میلیارد for headline positions
+ * where the full number would wrap.
  */
 export function formatMoneyCompact(rial: number, currency: Currency): string {
-  const amount = Math.abs(toDisplayAmount(rial, currency));
-  const sign = rial < 0 ? '-' : '';
-  const unit = CURRENCY_LABEL[currency];
-
-  if (amount >= 1e12) return `${sign}${formatNumber(amount / 1e12, { maximumFractionDigits: 2 })} هزار میلیارد ${unit}`;
-  if (amount >= 1e9) return `${sign}${formatNumber(amount / 1e9, { maximumFractionDigits: 2 })} میلیارد ${unit}`;
-  if (amount >= 1e6) return `${sign}${formatNumber(amount / 1e6, { maximumFractionDigits: 2 })} میلیون ${unit}`;
-  return formatMoney(rial, currency);
+  const { value, unit } = formatMoneyParts(rial, currency, { compact: true });
+  return `${value} ${unit}`;
 }
 
 /** Signed percentage, e.g. `+۲٫۴٪` / `−۱٫۱٪`. */
@@ -110,6 +154,19 @@ export function formatPercent(value: number, { signed = true } = {}): string {
 /** Quantities keep more precision than money: 0.21 BTC must not round to 0. */
 export function formatQuantity(value: number, decimals: number): string {
   return formatNumber(value, { maximumFractionDigits: decimals });
+}
+
+/**
+ * A quantity as typed into a field: Persian, Arabic-Indic or Latin digits,
+ * either decimal separator, grouping dropped.
+ *
+ * `null` — not 0 — for anything unusable, so a caller can tell an empty field
+ * from a deliberate zero. Zero is never a valid new holding, but it is a
+ * meaningful edit: it clears the position.
+ */
+export function parseQuantity(input: string): number | null {
+  const parsed = Number.parseFloat(toLatinDigits(input).replace(/,/g, ''));
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 /* -------------------------------------------------------------------------- */

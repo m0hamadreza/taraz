@@ -37,8 +37,8 @@ export function MobileFrame({ children }: React.PropsWithChildren) {
 
 /** Backdrop tones, a step away from the app background so the frame reads. */
 const BACKDROP = {
-  light: 'hsl(40 14% 91%)',
-  dark: 'hsl(30 9% 4%)',
+  light: 'hsl(75 11% 92.9%)',
+  dark: 'hsl(231.4 88.6% 2.1%)',
 } as const;
 
 /**

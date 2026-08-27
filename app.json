@@ -7,10 +7,19 @@
     "icon": "./assets/images/icon.png",
     "scheme": "taraz",
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.taraz.app"
+      "bundleIdentifier": "com.taraz.app",
+      "infoPlist": {
+        "ExpoLocalization_supportsRTL": true,
+        "ExpoLocalization_forcesRTL": true,
+        "CFBundleLocalizations": [
+          "fa-IR"
+        ]
+      }
     },
     "android": {
       "package": "com.taraz.app",
@@ -41,12 +50,20 @@
         {
           "supportsRTL": true,
           "forcesRTL": true,
-          "supportedLocales": ["fa-IR"]
+          "supportedLocales": [
+            "fa-IR"
+          ]
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1cf17205-f905-4ff2-98c5-7aff19573548"
+      }
     }
   }
 }

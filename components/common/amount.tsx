@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { View } from 'react-native';
 
+import { MONEY_UNIT_CLASS } from '@/components/common/money';
 import { Text } from '@/components/ui/text';
-import { CURRENCY_LABEL, formatMoney } from '@/lib/format';
+import { formatMoneyParts } from '@/lib/format';
 import type { Currency } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +15,10 @@ import { cn } from '@/lib/utils';
  * would handle it on native but is a no-op in react-native-web, so the size is
  * chosen from the rendered length instead. Deterministic, no measurement pass,
  * and identical on all three platforms.
+ *
+ * The unit beside it is a sibling rather than nested text so that
+ * `adjustsFontSizeToFit` shrinks only the number — see `<Money/>`, which gives
+ * every other figure in the app this same pairing at a smaller scale.
  */
 function sizeForLength(length: number): string {
   if (length <= 10) return 'text-3xl';
@@ -31,7 +36,7 @@ export function Amount({
   currency: Currency;
   className?: string;
 }) {
-  const value = formatMoney(rial, currency, { withUnit: false });
+  const { value, unit } = formatMoneyParts(rial, currency);
 
   return (
     <View className={cn('flex-row items-baseline gap-1.5', className)}>
@@ -42,9 +47,7 @@ export function Amount({
         minimumFontScale={0.7}>
         {value}
       </Text>
-      <Text className="text-muted-foreground text-sm font-medium">
-        {CURRENCY_LABEL[currency]}
-      </Text>
+      <Text className={cn('text-sm', MONEY_UNIT_CLASS)}>{unit}</Text>
     </View>
   );
 }

@@ -28,7 +28,7 @@ export function ChangeBadge({
       className={cn(
         'flex-row items-center gap-1 rounded-full',
         size === 'sm' ? 'px-1.5 py-0.5' : 'px-2 py-1',
-        flat ? 'bg-muted' : up ? 'bg-up/12' : 'bg-down/12',
+        flat ? 'bg-muted' : up ? 'bg-up/10' : 'bg-down/10',
         className
       )}>
       {!flat ? (
